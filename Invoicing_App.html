@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #0078D7;
+      --accent: #f0f0f0;
+      --text: #333;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--accent);
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: var(--text);
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    .btn {
+      margin-top: 20px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn:hover {
+      background-color: #005fa3;
+    }
+    .invoice-box {
+      margin-top: 30px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .invoice-box table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .invoice-box th, .invoice-box td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+    .invoice-box th {
+      background-color: #f9f9f9;
+    }
+    .logo-preview {
+      max-height: 80px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 600px) {
+      .btn {
+        font-size: 14px;
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Invoice Generator</h1>
+
+    <form id="invoiceForm">
+      <label for="logoUpload">Upload Logo</label>
+      <input type="file" id="logoUpload" accept="image/*">
+
+      <label for="clientName">Client Name</label>
+      <input type="text" id="clientName" required>
+
+      <label for="invoiceDate">Invoice Date</label>
+      <input type="date" id="invoiceDate" required>
+
+      <label for="description">Service Description</label>
+      <textarea id="description" rows="3" required></textarea>
+
+      <label for="peopleCount">Quantity of People</label>
+      <input type="number" id="peopleCount" min="1" required>
+
+      <label for="amount">Total Amount (R)</label>
+      <input type="number" id="amount" required>
+
+      <button type="submit" class="btn">Generate Invoice</button>
+    </form>
+
+    <div id="invoiceDisplay" style="display:none;">
+      <div id="invoiceContent" class="invoice-box">
+        <div id="logoContainer"></div>
+
+        <h2>INVOICE</h2>
+        <p><strong>Carol Crown (PTY) LTD</strong><br>
+        2024/027045/07<br>
+        Stand No 454, Seleka Wyk 1<br>
+        Lephalale, 0609<br>
+        079 608 0934</p>
+
+        <p><strong>BILL TO:</strong><br><span id="outClient"></span></p>
+
+        <table>
+          <tr><th>INVOICE #</th><td>105</td></tr>
+          <tr><th>INVOICE DATE</th><td id="outDate"></td></tr>
+          <tr><th>Quantity of People</th><td id="outPeople"></td></tr>
+        </table>
+
+        <table>
+          <tr><th>DESCRIPTION</th><th>AMOUNT</th></tr>
+          <tr><td id="outDesc"></td><td id="outAmount"></td></tr>
+        </table>
+
+        <p style="text-align:right;"><strong>TOTAL:</strong> R<span id="outTotal"></span></p>
+
+        <p><strong>ACCOUNT DETAILS</strong><br>
+        NAME OF BANK: FNB<br>
+        ACCOUNT NUMBER: 63141753467<br>
+        BRANCH CODE: 250655<br>
+        ACCOUNT HOLDER: M Mothoni</p>
+
+        <p>Thank you</p>
+      </div>
+
+      <button class="btn" onclick="downloadPDF()">Download PDF</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const client = document.getElementById('clientName').value;
+      const date = document.getElementById('invoiceDate').value;
+      const desc = document.getElementById('description').value;
+      const people = document.getElementById('peopleCount').value;
+      const amount = parseFloat(document.getElementById('amount').value).toFixed(2);
+
+      document.getElementById('outClient').textContent = client;
+      document.getElementById('outDate').textContent = date;
+      document.getElementById('outDesc').textContent = desc;
+      document.getElementById('outAmount').textContent = 'R' + amount;
+      document.getElementById('outTotal').textContent = amount;
+      document.getElementById('outPeople').textContent = people;
+
+      const logoInput = document.getElementById('logoUpload');
+      const logoContainer = document.getElementById('logoContainer');
+      logoContainer.innerHTML = '';
+      if (logoInput.files && logoInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.className = 'logo-preview';
+          logoContainer.appendChild(img);
+        };
+        reader.readAsDataURL(logoInput.files[0]);
+      }
+
+      document.getElementById('invoiceDisplay').style.display = 'block';
+    });
+
+    function downloadPDF() {
+      const element = document.getElementById('invoiceContent');
+      html2pdf().set({
+        margin: 10,
+        filename: 'invoice.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(element).save();
+    }
+  </script>
+
+</body>
+</html>
